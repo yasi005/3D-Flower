@@ -3,8 +3,8 @@
 </p>
 
 <p align="center">
-  A quiet archive of glowing specimens.<br />
-  Scroll through a collection of 3D flowers — less product page, more night museum.
+  A small collection of luminous flowers,<br />
+  presented the way one might walk a quiet gallery after dark.
 </p>
 
 <p align="center">
@@ -19,13 +19,15 @@
 
 ## Why
 
-Most 3D demos on the web feel like tech demos first — orbit controls, debug panels, a model dropped in a void.
+So many 3D pieces online feel like demonstrations first — controls in every corner, a model floating in empty space, the craft on display rather than the subject.
 
-Neon / Flora started from the opposite question: *what if a flower collection felt like walking a dim gallery at night?* Champagne light, catalog plates, and the specimen holding the room.
+I wanted something gentler.
 
-I wanted atmosphere over UI chrome. The model as the hero. A story you step through — each scroll a new specimen, not a random camera jump. On a phone, quieter plates so the bloom still owns the middle.
+Neon / Flora asks a simpler question: *what if browsing a flower felt like standing before a specimen under soft light?* Not a product page. Not a playground. A short archive you move through slowly — champagne accents, catalog plates, and the bloom holding the centre of the room.
 
-If it reads like a product landing page, I failed. If it feels like an archive you can hold, I got it right.
+Atmosphere before chrome. The flower before the UI. On a phone, the plates step back so the specimen can stay in focus.
+
+If it feels like marketing, I missed. If it feels like something you might linger with, I landed where I hoped.
 
 ---
 
@@ -33,29 +35,29 @@ If it reads like a product landing page, I failed. If it feels like an archive y
 
 | | |
 |:--|:--|
-| **Scroll / swipe** | Step specimen by specimen |
-| **Keys** | Arrows, page keys, Home / End |
-| **Bloom** | Current flower folds shut; the next opens from a bud |
-| **Spin** | Scroll charges a flywheel that winds up and settles |
-| **Plates** | Catalog copy on the left, profile & detail on the right |
+| **Scroll or swipe** | Move from one specimen to the next |
+| **Keys** | Arrows, page keys, Home and End |
+| **Bloom** | The open flower closes; the next unfolds from a bud |
+| **Spin** | Motion gathers weight, then settles — never abrupt |
+| **Plates** | Notes on the left; profile and detail views on the right |
 
-Desktop keeps the full archival layout. Mobile softens it so the flower stays the focus.
+Wide screens keep the full archival frame. Smaller screens keep the same spirit, with less competing detail.
 
 ---
 
-## How it was built
+## How it was shaped
 
-**One timeline, not a pile of pages.**  
-Chapters live in a single paused GSAP timeline. Scroll doesn’t move the document — it tweens the playhead. Copy, cards, accent, and camera ride the same beat.
+**One continuous timeline.**  
+Each chapter sits on a single paused timeline. Scrolling does not move the page — it advances the story. Copy, cards, colour, and camera share the same rhythm.
 
-**Bloom in the shader.**  
-Petals don’t swap meshes. A world-space warp closes the flower into a bud and opens it again, so transitions feel botanical instead of like a hard cut.
+**Bloom written into the light.**  
+There is no hard cut between models. A quiet warp folds the petals inward and opens them again, so the change feels botanical rather than technical.
 
-**Layout that respects the flower.**  
-The free space between the side plates is measured from the DOM. The camera fits the specimen into that pocket — when the UI gets quieter, the model grows into the room.
+**Space measured for the flower.**  
+The open area between the side plates is read from the layout. The camera settles the specimen into that space, so when the interface softens, the bloom simply has more room to breathe.
 
-**Content as the theme.**  
-Titles, latin names, panels, and scene keys live in one config. Re-theme the archive without hunting through components.
+**The collection in one place.**  
+Titles, latin names, views, and scene notes live in a single config. The archive can be re-themed without untangling the rest of the experience.
 
 ---
 
@@ -66,15 +68,15 @@ npm install
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
+Then open [http://localhost:3000](http://localhost:3000) and scroll when you are ready.
 
 ---
 
 ## Deploy
 
-Static Next.js app. No env vars, no backend.
+A static Next.js app — no environment variables, no server to manage.
 
-Push to GitHub → import on [Vercel](https://vercel.com/new) → deploy.
+Push the repository to GitHub, import it on [Vercel](https://vercel.com/new), and deploy.
 
 <p align="center">
   <a href="https://vercel.com/new">
@@ -86,7 +88,7 @@ Push to GitHub → import on [Vercel](https://vercel.com/new) → deploy.
 
 ## Credits
 
-Models under **CC-BY 4.0**:
+With thanks to the artists. Models are used under **CC-BY 4.0**:
 
 - [Flower by olilar](https://sketchfab.com/3d-models/flower-a2eea4c5ba844243ad9484c5b5d2158e)  
 - [flower by milaha](https://sketchfab.com/3d-models/flower-0fcaca93ce974129ba6188dda6e3b742)  

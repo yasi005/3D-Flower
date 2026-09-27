@@ -17,15 +17,13 @@
 }
 
 :root {
-  /* matte obsidian, never pure black */
-  --background: #090a0f;
-  /* cool platinum for primary text */
-  --foreground: #e6e6e9;
-  /* muted zinc for pre-titles, specs, captions */
-  --muted: #a1a1aa;
+  /* warm ink — museum dark without the cold blue slate */
+  --background: #171614;
+  --foreground: #f5f3ef;
+  --muted: #c9c5bc;
   /* champagne gold; eased live between chapter tints by the timeline */
   --accent: #d6c29c;
-  --hairline: rgba(255, 255, 255, 0.08);
+  --hairline: rgba(255, 255, 255, 0.11);
 }
 
 @theme inline {
@@ -66,16 +64,20 @@ body {
   color: var(--background);
 }
 
-/* barely-there falloff at the edges; keeps the frame quiet */
+/* quiet centre lift — warmth, not a color cast */
+.stage-wash {
+  background: radial-gradient(ellipse 55% 50% at 50% 46%, rgba(255, 250, 240, 0.07) 0%, transparent 68%);
+}
+
 .bg-vignette {
-  background: radial-gradient(ellipse at center, transparent 45%, rgba(3, 3, 6, 0.55) 100%);
+  background: radial-gradient(ellipse 80% 75% at 50% 48%, transparent 52%, rgba(8, 7, 6, 0.4) 100%);
 }
 
 /* ── Frosted glass cards ───────────────────────────────────────────────── */
 
 .glass {
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.12);
   backdrop-filter: blur(14px) saturate(120%);
   -webkit-backdrop-filter: blur(14px) saturate(120%);
 }

@@ -323,6 +323,8 @@ export default function Experience() {
   return (
     <div ref={root} className="experience fixed inset-0 overflow-hidden">
       <Stage />
+      {/* soft-light wash on top of the WebGL frame — lifts the void without a gold slab */}
+      <div className="stage-wash pointer-events-none fixed inset-0 z-[1]" aria-hidden />
       <div className="bg-vignette pointer-events-none fixed inset-0 z-[1]" aria-hidden />
       <Loader progress={progress} done={loaded} />
 
@@ -381,7 +383,7 @@ export default function Experience() {
 
               <ul className="mt-6 hidden flex-wrap items-center gap-x-3 gap-y-2 wide:flex short:hidden">
                 {c.meta.map((m) => (
-                  <li key={m} className="copy-chip text-[9px] uppercase tracking-[0.22em] text-muted/85">
+                  <li key={m} className="copy-chip text-[9px] uppercase tracking-[0.22em] text-muted">
                     {m}
                   </li>
                 ))}
@@ -426,7 +428,7 @@ export default function Experience() {
                   </div>
                   <figcaption
                     data-card-caption
-                    className="mt-2 hidden items-center gap-2 truncate text-[9px] uppercase tracking-[0.22em] text-muted/80 wide:mt-3 wide:flex short:hidden"
+                    className="mt-2 hidden items-center gap-2 truncate text-[9px] uppercase tracking-[0.22em] text-muted wide:mt-3 wide:flex short:hidden"
                   >
                     <span className="rail-cap-mark" aria-hidden />
                     {p.label}
@@ -447,7 +449,7 @@ export default function Experience() {
                   className="flex origin-left items-center justify-between gap-4 [grid-area:1/1] will-change-[transform,opacity,filter] wide:flex-col wide:items-stretch wide:gap-4"
                 >
                   <div className="hidden wide:block short:hidden">
-                    <p className="text-[9px] uppercase tracking-[0.22em] text-muted/70">Archive note</p>
+                    <p className="text-[9px] uppercase tracking-[0.22em] text-muted">Archive note</p>
                     <p className="mt-1.5 line-clamp-2 font-serif text-[13px] font-light italic leading-snug text-muted">{c.cta.caption}</p>
                   </div>
                   <button
@@ -476,7 +478,7 @@ export default function Experience() {
               aria-label={`Go to ${c.title}`}
               aria-current={i === chapter}
               className={`font-serif text-sm italic transition-colors duration-700 ${
-                i === chapter ? "text-foreground" : "text-muted/50 hover:text-muted"
+                i === chapter ? "text-foreground" : "text-muted/70 hover:text-muted"
               }`}
             >
               {pad(i + 1)}
@@ -492,7 +494,7 @@ export default function Experience() {
         data-hint
         className="pointer-events-none fixed bottom-24 left-1/2 z-10 hidden -translate-x-1/2 flex-col items-center gap-3 wide:flex short:hidden"
       >
-        <span className="text-[9px] uppercase tracking-[0.35em] text-muted/70">Scroll</span>
+        <span className="text-[9px] uppercase tracking-[0.35em] text-muted">Scroll</span>
         <span className="hint-line h-10 w-px" />
       </div>
 

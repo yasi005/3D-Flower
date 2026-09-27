@@ -22,7 +22,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#090a0f",
+  themeColor: "#171614",
   // draw under the notch / home indicator; the UI pads itself with safe-area insets
   viewportFit: "cover",
 };

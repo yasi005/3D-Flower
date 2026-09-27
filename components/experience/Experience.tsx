@@ -32,18 +32,73 @@ const Stage = memo(function Stage() {
   );
 });
 
-function Loader({ progress, done }: { progress: number; done: boolean }) {
+const MIN_BOOT_MS = 2600;
+
+function Loader({ realProgress, assetsReady, onDone }: { realProgress: number; assetsReady: boolean; onDone: () => void }) {
+  const [shown, setShown] = useState(0);
+  const [fade, setFade] = useState(false);
+  const display = useRef(0);
+  const started = useRef(0);
+  const finished = useRef(false);
+  const realRef = useRef(realProgress);
+  const readyRef = useRef(assetsReady);
+
+  useEffect(() => {
+    realRef.current = realProgress;
+    readyRef.current = assetsReady;
+  }, [realProgress, assetsReady]);
+
+  useEffect(() => {
+    started.current = performance.now();
+    let raf = 0;
+    const tick = () => {
+      const elapsed = performance.now() - started.current;
+      const real = realRef.current;
+      const ready = readyRef.current;
+      // time crawl so the counter never snaps — feels like a real unpack
+      const crawl = Math.min(92, (elapsed / MIN_BOOT_MS) * 92);
+      const fromAssets = Math.min(real * 0.88, 92);
+      let target = Math.max(crawl, fromAssets);
+
+      if (ready && elapsed >= MIN_BOOT_MS) {
+        target = 100;
+      } else if (ready) {
+        // assets finished early — hold in the high 90s until the minimum beat
+        target = Math.min(96, 88 + (elapsed / MIN_BOOT_MS) * 8);
+      }
+
+      // slow ease — lower = heavier, more “loading”
+      display.current += (target - display.current) * 0.035;
+      const next = display.current;
+      setShown(next);
+
+      if (!finished.current && ready && elapsed >= MIN_BOOT_MS && next >= 99.2) {
+        finished.current = true;
+        setShown(100);
+        setFade(true);
+        window.setTimeout(onDone, 900);
+        return;
+      }
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [onDone]);
+
   return (
     <div
-      className={`pointer-events-none fixed inset-0 z-50 flex flex-col items-center justify-center gap-6 bg-background transition-opacity duration-700 ${
-        done ? "opacity-0" : "opacity-100"
+      className={`pointer-events-none fixed inset-0 z-50 flex flex-col items-center justify-center gap-6 bg-background transition-opacity duration-[900ms] ease-out ${
+        fade ? "opacity-0" : "opacity-100"
       }`}
-      aria-hidden={done}
+      aria-hidden={fade}
     >
       <p className="text-[10px] uppercase tracking-[0.35em] text-muted">The Collection</p>
-      <p className="font-serif text-6xl font-light italic text-foreground">{pad(Math.round(progress))}</p>
+      <p className="font-serif text-6xl font-light italic text-foreground">{pad(Math.min(100, Math.round(shown)))}</p>
       <div className="h-px w-32 bg-hairline">
-        <div className="h-full bg-accent/70 transition-[width] duration-300" style={{ width: `${progress}%` }} />
+        <div
+          className="h-full bg-accent/70 transition-[width] duration-500 ease-out"
+          style={{ width: `${Math.min(100, shown)}%` }}
+        />
       </div>
     </div>
   );
@@ -59,7 +114,9 @@ export default function Experience() {
   const busyTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [chapter, setChapter] = useState(0);
   const { progress, active } = useProgress();
-  const loaded = !active && progress >= 100;
+  const assetsReady = !active && progress >= 100;
+  const [bootDone, setBootDone] = useState(false);
+  const onBootDone = useCallback(() => setBootDone(true), []);
 
   // One paused master timeline: time i = chapter i. Wheel/swipe/keys tween the
   // playhead from one chapter to the next; the page itself never scrolls.
@@ -236,13 +293,13 @@ export default function Experience() {
     [punchText, sweepCards, bloomTo],
   );
 
-  // Intro: once the models are in, the flower blooms open. Same path as a
+  // Intro: once the boot curtain lifts, the flower blooms open. Same path as a
   // chapter change, so scrolling mid-intro cleanly takes over. Runs once:
-  // useProgress can flip `loaded` again when the panel canvases finish loading,
+  // useProgress can flip `assetsReady` again when the panel canvases finish,
   // and re-running it would bloom the wrong flower over the current chapter.
   const introduced = useRef(false);
   useEffect(() => {
-    if (!loaded) return;
+    if (!bootDone) return;
     if (!introduced.current) {
       introduced.current = true;
       bloomTo(index.current);
@@ -259,7 +316,7 @@ export default function Experience() {
       clearTimeout(unlock);
       if (busyTimer.current) clearTimeout(busyTimer.current);
     };
-  }, [loaded, bloomTo, sweepCards]);
+  }, [bootDone, bloomTo, sweepCards]);
 
   useEffect(() => {
     const observer = Observer.create({
@@ -326,7 +383,7 @@ export default function Experience() {
       {/* soft-light wash on top of the WebGL frame — lifts the void without a gold slab */}
       <div className="stage-wash pointer-events-none fixed inset-0 z-[1]" aria-hidden />
       <div className="bg-vignette pointer-events-none fixed inset-0 z-[1]" aria-hidden />
-      <Loader progress={progress} done={loaded} />
+      <Loader realProgress={progress} assetsReady={assetsReady} onDone={onBootDone} />
 
       {/* ── Masthead ───────────────────────────────────────────────────── */}
       <header className="pointer-events-none fixed inset-x-0 top-0 z-20 flex items-baseline justify-between px-5 pb-3 pt-[max(1rem,env(safe-area-inset-top))] wide:px-edge wide:pb-4 wide:py-10 short:py-4">

@@ -148,7 +148,7 @@ body {
   font-style: italic;
   line-height: 0.8;
   letter-spacing: -0.04em;
-  color: color-mix(in srgb, var(--accent) 10%, transparent);
+  color: color-mix(in srgb, var(--accent) 32%, transparent);
   user-select: none;
   animation: copy-breathe 7s ease-in-out infinite;
 }
@@ -444,7 +444,7 @@ body {
 
 @keyframes copy-breathe {
   0%,
-  100% { opacity: 0.55; transform: translateY(0); }
+  100% { opacity: 0.85; transform: translateY(0); }
   50% { opacity: 1; transform: translateY(-2px); }
 }
 
@@ -482,7 +482,7 @@ body {
     font-size: clamp(2.5rem, 12vw, 3.75rem);
     top: -0.2em;
     right: 0;
-    opacity: 0.28;
+    opacity: 0.55;
     animation: none;
   }
 

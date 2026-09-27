@@ -88,7 +88,10 @@ void main() {`)
 export function fadeableClone(scene: THREE.Object3D) {
   const clone = scene.clone(true);
   const bloom = { value: 1 };
+  const materials: THREE.Material[] = [];
   clone.userData.bloom = bloom;
+  clone.userData.materials = materials;
+  clone.userData.lastOpacity = -1;
   clone.traverse((o) => {
     const mesh = o as THREE.Mesh;
     if (!mesh.isMesh) return;
@@ -97,6 +100,7 @@ export function fadeableClone(scene: THREE.Object3D) {
       c.userData.baseOpacity = c.opacity;
       c.userData.baseTransparent = c.transparent;
       addBloom(c, bloom);
+      materials.push(c);
       return c;
     };
     mesh.material = Array.isArray(mesh.material) ? mesh.material.map(fade) : fade(mesh.material);
@@ -106,11 +110,24 @@ export function fadeableClone(scene: THREE.Object3D) {
 
 /** 0 = closed bud, 1 = open, for a fadeableClone. */
 export function setBloom(clone: THREE.Object3D, value: number) {
-  clone.userData.bloom.value = value;
+  const bloom = clone.userData.bloom as { value: number } | undefined;
+  if (!bloom || bloom.value === value) return;
+  bloom.value = value;
 }
 
 /** Sets the opacity of a fadeableClone (1 = exactly as authored). */
 export function setOpacity(root: THREE.Object3D, opacity: number) {
+  if (root.userData.lastOpacity === opacity) return;
+  root.userData.lastOpacity = opacity;
+  const materials = root.userData.materials as THREE.Material[] | undefined;
+  if (materials) {
+    for (const m of materials) {
+      m.opacity = m.userData.baseOpacity * opacity;
+      m.transparent = m.userData.baseTransparent || opacity < 0.999;
+      m.depthWrite = !m.transparent || opacity > 0.6;
+    }
+    return;
+  }
   root.traverse((o) => {
     const mesh = o as THREE.Mesh;
     if (!mesh.isMesh) return;

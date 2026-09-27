@@ -15,28 +15,31 @@ const VIEWS: Record<PanelMode, THREE.Vector3> = {
 };
 
 /**
- * Mirrors the main stage exactly: same per-flower opacity crossfade, same
- * bud-to-bloom unfurl, same scroll-kicked rotation. Only the camera differs.
+ * Mirrors the main stage: opacity, bloom, spin. Only the camera differs.
+ * Only the visible specimen is updated — side cards were cloning all four.
  */
 function Specimen({ mode }: { mode: PanelMode }) {
   const flowers = useFlowers();
   const group = useRef<THREE.Group>(null);
   const roots = useRef<(THREE.Group | null)[]>([]);
-  // each canvas needs its own copy of every scene graph
   const scenes = useMemo(() => flowers.map((f) => fadeableClone(f.scene)), [flowers]);
+  const look = useMemo(() => new THREE.Vector3(0, 0, 0), []);
 
   useFrame(({ camera }) => {
     group.current!.rotation.y = spin.angle + anim.rotY;
-    flowers.forEach((f, i) => {
-      const root = roots.current[i]!;
+    for (let i = 0; i < flowers.length; i++) {
       const opacity = anim.opacity[i];
-      root.visible = opacity > 0.005;
-      root.scale.setScalar(f.scale * (0.92 + 0.08 * opacity));
-      setOpacity(root, opacity);
+      const root = roots.current[i];
+      if (!root) continue;
+      const visible = opacity > 0.005;
+      root.visible = visible;
+      if (!visible) continue;
+      root.scale.setScalar(flowers[i].scale * (0.92 + 0.08 * opacity));
+      setOpacity(scenes[i], opacity);
       setBloom(scenes[i], anim.bloom[i]);
-    });
+    }
     camera.position.lerp(VIEWS[mode], 0.08);
-    camera.lookAt(0, 0, 0);
+    camera.lookAt(look);
   });
 
   return (
@@ -48,6 +51,7 @@ function Specimen({ mode }: { mode: PanelMode }) {
             roots.current[i] = el;
           }}
           scale={f.scale}
+          visible={false}
         >
           <primitive object={scenes[i]} position={f.offset} />
         </group>
@@ -59,13 +63,14 @@ function Specimen({ mode }: { mode: PanelMode }) {
 export default function HoloViewport({ mode }: { mode: PanelMode }) {
   return (
     <Canvas
-      dpr={[1, 1.5]}
+      dpr={1}
+      frameloop="always"
       camera={{ position: VIEWS[mode].toArray(), fov: 40 }}
-      gl={{ antialias: true, alpha: true, powerPreference: "high-performance" }}
+      gl={{ antialias: false, alpha: true, powerPreference: "low-power", stencil: false, depth: true }}
+      performance={{ min: 0.5 }}
     >
       <hemisphereLight args={["#f4f4f6", "#141419", 1]} />
       <directionalLight position={[2, 4, 3]} intensity={2} />
-      <directionalLight position={[-4, 0.6, -2]} intensity={0.6} color="#dbe3ff" />
       <Suspense fallback={null}>
         <Specimen mode={mode} />
       </Suspense>

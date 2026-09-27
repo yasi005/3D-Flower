@@ -20,10 +20,11 @@ const Stage = memo(function Stage() {
   return (
     <Canvas
       style={{ position: "fixed", inset: 0 }}
-      dpr={[1, 2]}
+      dpr={[1, 1.5]}
+      performance={{ min: 0.5 }}
       camera={{ position: [0, 11, 0], fov: TOP_DOWN_FOV, near: 0.1, far: 100 }}
       // tone mapping is applied once, by the composer's ToneMapping pass
-      gl={{ antialias: false, powerPreference: "high-performance", toneMapping: THREE.NoToneMapping }}
+      gl={{ antialias: false, powerPreference: "high-performance", toneMapping: THREE.NoToneMapping, stencil: false }}
     >
       <Suspense fallback={null}>
         <Scene />
@@ -35,13 +36,15 @@ const Stage = memo(function Stage() {
 const MIN_BOOT_MS = 2600;
 
 function Loader({ realProgress, assetsReady, onDone }: { realProgress: number; assetsReady: boolean; onDone: () => void }) {
-  const [shown, setShown] = useState(0);
   const [fade, setFade] = useState(false);
   const display = useRef(0);
   const started = useRef(0);
   const finished = useRef(false);
   const realRef = useRef(realProgress);
   const readyRef = useRef(assetsReady);
+  const numRef = useRef<HTMLParagraphElement>(null);
+  const barRef = useRef<HTMLDivElement>(null);
+  const lastShown = useRef(-1);
 
   useEffect(() => {
     realRef.current = realProgress;
@@ -70,11 +73,18 @@ function Loader({ realProgress, assetsReady, onDone }: { realProgress: number; a
       // slow ease — lower = heavier, more “loading”
       display.current += (target - display.current) * 0.035;
       const next = display.current;
-      setShown(next);
+      const rounded = Math.min(100, Math.round(next));
+      // write the DOM directly — setState every frame was re-rendering the whole page
+      if (rounded !== lastShown.current) {
+        lastShown.current = rounded;
+        if (numRef.current) numRef.current.textContent = pad(rounded);
+        if (barRef.current) barRef.current.style.width = `${Math.min(100, next)}%`;
+      }
 
       if (!finished.current && ready && elapsed >= MIN_BOOT_MS && next >= 99.2) {
         finished.current = true;
-        setShown(100);
+        if (numRef.current) numRef.current.textContent = pad(100);
+        if (barRef.current) barRef.current.style.width = "100%";
         setFade(true);
         window.setTimeout(onDone, 900);
         return;
@@ -93,12 +103,11 @@ function Loader({ realProgress, assetsReady, onDone }: { realProgress: number; a
       aria-hidden={fade}
     >
       <p className="text-[10px] uppercase tracking-[0.35em] text-muted">The Collection</p>
-      <p className="font-serif text-6xl font-light italic text-foreground">{pad(Math.min(100, Math.round(shown)))}</p>
+      <p ref={numRef} className="font-serif text-6xl font-light italic text-foreground">
+        00
+      </p>
       <div className="h-px w-32 bg-hairline">
-        <div
-          className="h-full bg-accent/70 transition-[width] duration-500 ease-out"
-          style={{ width: `${Math.min(100, shown)}%` }}
-        />
+        <div ref={barRef} className="h-full bg-accent/70" style={{ width: "0%" }} />
       </div>
     </div>
   );

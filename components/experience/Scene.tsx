@@ -27,10 +27,12 @@ function Specimen({ data, index }: { data: FlowerData; index: number }) {
 
   useFrame(() => {
     const opacity = anim.opacity[index];
-    root.current!.visible = opacity > 0.005;
+    const visible = opacity > 0.005;
+    root.current!.visible = visible;
+    if (!visible) return;
     // a slight grow as it fades in
     root.current!.scale.setScalar(data.scale * (0.92 + 0.08 * opacity));
-    setOpacity(root.current!, opacity);
+    setOpacity(scene, opacity);
     setBloom(scene, anim.bloom[index]);
   });
 
@@ -51,28 +53,23 @@ function Lights() {
     <>
       <hemisphereLight args={["#f4f1ea", "#171614", 0.9]} />
       <directionalLight position={[1.5, 6, 1]} intensity={2} />
-      <directionalLight position={[-5, 0.6, -3]} intensity={0.9} color="#dbe3ff" />
-      <directionalLight position={[5, 0.4, 3]} intensity={0.7} color="#f3e2c4" />
-      {/* reflections for the PBR materials, built locally (no HDR download);
-          the side panels are tinted a whisper apart for an iridescent sheen */}
-      <Environment resolution={256} environmentIntensity={0.55}>
+      <directionalLight position={[-5, 0.6, -3]} intensity={0.7} color="#dbe3ff" />
+      <directionalLight position={[5, 0.4, 3]} intensity={0.55} color="#f3e2c4" />
+      {/* low-res local env — enough sheen without a heavy cubemap cost */}
+      <Environment resolution={64} environmentIntensity={0.5} frames={1}>
         <Lightformer intensity={1.8} position={[0, 5, 0]} rotation-x={Math.PI / 2} scale={[6, 6, 1]} />
-        <Lightformer intensity={0.7} color="#e3e0ff" position={[-4, 1, 0]} rotation-y={Math.PI / 2} scale={[4, 3, 1]} />
-        <Lightformer intensity={0.7} color="#fff1dc" position={[4, 1, 0]} rotation-y={-Math.PI / 2} scale={[4, 3, 1]} />
-        <Lightformer intensity={0.4} color="#dff6f3" position={[0, 1, 4]} scale={[4, 2, 1]} />
+        <Lightformer intensity={0.65} color="#e3e0ff" position={[-4, 1, 0]} rotation-y={Math.PI / 2} scale={[4, 3, 1]} />
+        <Lightformer intensity={0.65} color="#fff1dc" position={[4, 1, 0]} rotation-y={-Math.PI / 2} scale={[4, 3, 1]} />
       </Environment>
     </>
   );
 }
 
-/**
- * Micro-glow: a high threshold means only the brightest specular glints on the
- * petal tips bloom, with a tight radius so nothing hazes over.
- */
+/** Micro-glow on petal tips — no MSAA composer pass (that was a big frame cost). */
 function Effects() {
   return (
-    <EffectComposer multisampling={4}>
-      <Bloom mipmapBlur luminanceThreshold={0.88} luminanceSmoothing={0.12} intensity={0.28} radius={0.35} />
+    <EffectComposer multisampling={0} enableNormalPass={false}>
+      <Bloom mipmapBlur luminanceThreshold={0.9} luminanceSmoothing={0.15} intensity={0.22} radius={0.28} levels={4} />
       <ToneMapping mode={ToneMappingMode.ACES_FILMIC} />
     </EffectComposer>
   );
@@ -144,7 +141,6 @@ function Flower() {
 export default function Scene() {
   return (
     <>
-      {/* must be clearly lighter than void — the composer covers the CSS layer */}
       <color attach="background" args={["#171614"]} />
       <Lights />
       <CameraRig />
@@ -152,11 +148,12 @@ export default function Scene() {
       <ContactShadows
         position={[0, -1.05, 0]}
         scale={4}
-        resolution={512}
-        blur={3.5}
-        far={2.4}
-        opacity={0.4}
+        resolution={128}
+        blur={2.2}
+        far={2.2}
+        opacity={0.35}
         color="#050508"
+        frames={1}
       />
       <Effects />
     </>

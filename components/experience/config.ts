@@ -21,7 +21,8 @@ export type SceneKey = {
   rotY: number;
   /** camera distance above the flower (overhead view) */
   camZ: number;
-  /** quiet UI accent (hairline rules, active nav, counter): champagne / platinum */
+  /** UI accent (title outline, hairline rules, active nav, counter), sampled from the
+   *  flower's own materials and lifted so it reads on the dark ground */
   accent: string;
 };
 
@@ -51,7 +52,7 @@ export const CHAPTERS: Chapter[] = [
       { label: "SPECIMEN 01 / DETAIL", mode: "detail" },
     ],
     cta: { caption: "Four specimens in the collection. Continue to the next.", label: "Next specimen", action: "next" },
-    scene: { opacity: [1, 0, 0, 0], spin: 0.1, rotY: 0, camZ: 5.2, accent: "#d6c29c" },
+    scene: { opacity: [1, 0, 0, 0], spin: 0.1, rotY: 0, camZ: 5.2, accent: "#a9c8ff" },
   },
   {
     id: "specimen-02",
@@ -65,7 +66,7 @@ export const CHAPTERS: Chapter[] = [
       { label: "SPECIMEN 02 / DETAIL", mode: "detail" },
     ],
     cta: { caption: "Two more specimens to go.", label: "Next specimen", action: "next" },
-    scene: { opacity: [0, 1, 0, 0], spin: 0.12, rotY: 0, camZ: 5.2, accent: "#c9cdd6" },
+    scene: { opacity: [0, 1, 0, 0], spin: 0.12, rotY: 0, camZ: 5.2, accent: "#8e98ff" },
   },
   {
     id: "specimen-03",
@@ -79,7 +80,7 @@ export const CHAPTERS: Chapter[] = [
       { label: "SPECIMEN 03 / DETAIL", mode: "detail" },
     ],
     cta: { caption: "One last specimen remains.", label: "Next specimen", action: "next" },
-    scene: { opacity: [0, 0, 1, 0], spin: 0.1, rotY: 0, camZ: 5.2, accent: "#e2cfa9" },
+    scene: { opacity: [0, 0, 1, 0], spin: 0.1, rotY: 0, camZ: 5.2, accent: "#f4a3d6" },
   },
   {
     id: "specimen-04",
@@ -93,6 +94,6 @@ export const CHAPTERS: Chapter[] = [
       { label: "SPECIMEN 04 / DETAIL", mode: "detail" },
     ],
     cta: { caption: "Back to the first specimen.", label: "Restart", action: "top" },
-    scene: { opacity: [0, 0, 0, 1], spin: 0.1, rotY: 0, camZ: 5.2, accent: "#e2cfa9" },
+    scene: { opacity: [0, 0, 0, 1], spin: 0.1, rotY: 0, camZ: 5.2, accent: "#e39a52" },
   },
 ];

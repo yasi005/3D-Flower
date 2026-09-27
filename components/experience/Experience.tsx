@@ -3,7 +3,7 @@
 import { memo, Suspense, useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import { Canvas } from "@react-three/fiber";
-import { useProgress } from "@react-three/drei";
+import { Preload, useProgress } from "@react-three/drei";
 import gsap from "gsap";
 import { Observer } from "gsap/Observer";
 import { CHAPTERS } from "./config";
@@ -20,7 +20,8 @@ const Stage = memo(function Stage() {
   return (
     <Canvas
       style={{ position: "fixed", inset: 0 }}
-      dpr={[1, 1.5]}
+      dpr={1}
+      frameloop="always"
       performance={{ min: 0.5 }}
       camera={{ position: [0, 11, 0], fov: TOP_DOWN_FOV, near: 0.1, far: 100 }}
       // tone mapping is applied once, by the composer's ToneMapping pass
@@ -28,12 +29,37 @@ const Stage = memo(function Stage() {
     >
       <Suspense fallback={null}>
         <Scene />
+        <Preload all />
       </Suspense>
     </Canvas>
   );
 });
 
-const MIN_BOOT_MS = 2600;
+/**
+ * Title as outlined letters in the flower's accent. Keyed by chapter, so each
+ * change remounts it and the letters flood with colour then drain to an outline
+ * one after another (.title-letter in globals.css).
+ */
+function OutlineTitle({ text }: { text: string }) {
+  let i = 0;
+  return (
+    <span className="title-outline">
+      <span className="sr-only">{text}</span>
+      {text.split(" ").map((word, w) => (
+        <span key={w} className="title-word" aria-hidden>
+          {[...word].map((ch, c) => (
+            <span key={c} className="title-letter" style={{ "--i": i++ } as React.CSSProperties}>
+              {ch}
+            </span>
+          ))}
+          {" "}
+        </span>
+      ))}
+    </span>
+  );
+}
+
+const MIN_BOOT_MS = 1600;
 
 function Loader({ realProgress, assetsReady, onDone }: { realProgress: number; assetsReady: boolean; onDone: () => void }) {
   const [fade, setFade] = useState(false);
@@ -55,23 +81,23 @@ function Loader({ realProgress, assetsReady, onDone }: { realProgress: number; a
     started.current = performance.now();
     let raf = 0;
     const tick = () => {
-      const elapsed = performance.now() - started.current;
+      const elapsedMs = performance.now() - started.current;
       const real = realRef.current;
       const ready = readyRef.current;
       // time crawl so the counter never snaps — feels like a real unpack
-      const crawl = Math.min(92, (elapsed / MIN_BOOT_MS) * 92);
+      const crawl = Math.min(92, (elapsedMs / MIN_BOOT_MS) * 92);
       const fromAssets = Math.min(real * 0.88, 92);
       let target = Math.max(crawl, fromAssets);
 
-      if (ready && elapsed >= MIN_BOOT_MS) {
+      if (ready && elapsedMs >= MIN_BOOT_MS) {
         target = 100;
       } else if (ready) {
         // assets finished early — hold in the high 90s until the minimum beat
-        target = Math.min(96, 88 + (elapsed / MIN_BOOT_MS) * 8);
+        target = Math.min(96, 88 + (elapsedMs / MIN_BOOT_MS) * 8);
       }
 
       // slow ease — lower = heavier, more “loading”
-      display.current += (target - display.current) * 0.035;
+      display.current += (target - display.current) * 0.06;
       const next = display.current;
       const rounded = Math.min(100, Math.round(next));
       // write the DOM directly — setState every frame was re-rendering the whole page
@@ -81,12 +107,13 @@ function Loader({ realProgress, assetsReady, onDone }: { realProgress: number; a
         if (barRef.current) barRef.current.style.width = `${Math.min(100, next)}%`;
       }
 
-      if (!finished.current && ready && elapsed >= MIN_BOOT_MS && next >= 99.2) {
+      if (!finished.current && ready && elapsedMs >= MIN_BOOT_MS && next >= 99.2) {
         finished.current = true;
         if (numRef.current) numRef.current.textContent = pad(100);
         if (barRef.current) barRef.current.style.width = "100%";
         setFade(true);
-        window.setTimeout(onDone, 900);
+        // lift the curtain; flower is already staged underneath
+        window.setTimeout(onDone, 280);
         return;
       }
       raf = requestAnimationFrame(tick);
@@ -97,7 +124,7 @@ function Loader({ realProgress, assetsReady, onDone }: { realProgress: number; a
 
   return (
     <div
-      className={`pointer-events-none fixed inset-0 z-50 flex flex-col items-center justify-center gap-6 bg-background transition-opacity duration-[900ms] ease-out ${
+      className={`pointer-events-none fixed inset-0 z-50 flex flex-col items-center justify-center gap-6 bg-background transition-opacity duration-[480ms] ease-out ${
         fade ? "opacity-0" : "opacity-100"
       }`}
       aria-hidden={fade}
@@ -152,43 +179,18 @@ export default function Experience() {
       tl.to("[data-hint]", { autoAlpha: 0, duration: 0.2 }, 0);
       tl.set({}, {}, N - 1);
       timeline.current = tl;
-
-      // Hide every chapter/CTA layer via GSAP only — React inline styles would
-      // fight these tweens on each setChapter re-render and leave residue.
-      const layers = root.current?.querySelectorAll<HTMLElement>("[data-chapter], [data-cta]");
-      layers?.forEach((node, i) => {
-        // first chapter + first cta stay visible (indices 0 and N)
-        if (i % N !== 0) gsap.set(node, { autoAlpha: 0 });
-      });
     }, root);
     return () => ctx.revert();
   }, []);
 
-  // Copy + CTA transition. Runs as standalone tweens (not on the
-  // master timeline) so it starts on the very frame of the scroll input,
-  // alongside the spin kick, instead of waiting on the timeline's ease.
-  //
-  // All chapters share one grid cell. Rapid scrolls used to kill mid-fade
-  // exit tweens and leave several layers at partial opacity stacked on top
-  // of each other. Every punch snaps non-targets clean, then rises only `to`.
-  const punchText = useCallback((to: number) => {
+  // Single copy + CTA plate — content swaps via React state, so layers can never stack.
+  const punchText = useCallback(() => {
     const el = root.current;
     if (!el) return;
-    const chapters = Array.from(el.querySelectorAll<HTMLElement>("[data-chapter]"));
-    const ctas = Array.from(el.querySelectorAll<HTMLElement>("[data-cta]"));
-    const all = [...chapters, ...ctas];
-    const incoming = [chapters[to], ctas[to]].filter(Boolean);
-    const outgoing = all.filter((n) => !incoming.includes(n));
-    gsap.killTweensOf(all);
-
-    // Snap every non-target off immediately. Exit tweens used to be killed
-    // mid-fade on the next scroll, leaving several copy/CTA layers at partial
-    // opacity in the same grid cell (the "overloaded" stacked text).
-    gsap.set(outgoing, { autoAlpha: 0, y: 0, filter: "blur(0px)" });
-
-    // a slow, overshoot-free rise: the long expo tail reads calm and expensive
+    const plates = el.querySelectorAll<HTMLElement>("[data-chapter], [data-cta]");
+    gsap.killTweensOf(plates);
     gsap.fromTo(
-      incoming,
+      plates,
       { autoAlpha: 0, y: 22, filter: "blur(6px)" },
       {
         autoAlpha: 1,
@@ -202,8 +204,7 @@ export default function Experience() {
       },
     );
 
-    // redraw the plate’s ink rule with the incoming chapter
-    const ink = incoming[0]?.querySelector<HTMLElement>(".copy-rule-ink");
+    const ink = el.querySelector<HTMLElement>("[data-chapter] .copy-rule-ink");
     if (ink) {
       gsap.fromTo(ink, { scaleX: 0 }, { scaleX: 1, duration: 0.9, delay: 0.45, ease: "expo.out", transformOrigin: "left center" });
     }
@@ -249,9 +250,8 @@ export default function Experience() {
       .to(captions, { autoAlpha: 1, y: 0, duration: 0.9, ease: "expo.out", stagger: 0.08 }, revealAt + 0.25);
   }, []);
 
-  // Flower transition: the current flower folds closed into a bud and fades,
-  // while the next one fades in as a bud and slowly unfurls. Standalone tweens
-  // like punchText, so it starts on the same frame as the scroll input.
+  // Flower transition: outgoing folds shut into a bud and fades; incoming
+  // fades in as a bud then slowly unfurls. The long expo-ish bloom is the show.
   const bloomTo = useCallback((to: number) => {
     gsap.killTweensOf([anim.opacity, anim.bloom]);
     const target = CHAPTERS[to].scene.opacity;
@@ -280,7 +280,7 @@ export default function Experience() {
       // (wheel/swipe already kicked with its real velocity; this covers keys and
       // buttons, and never lowers a stronger scroll kick)
       kickSpin(i > from ? -1 : 1);
-      punchText(i);
+      setChapter(i);
       sweepCards(true);
       bloomTo(i);
       // text punch is ~1.28s; keep input locked until both scene + copy settle
@@ -291,21 +291,28 @@ export default function Experience() {
         // front-loaded so the scene visibly responds on the first frame
         ease: "power3.out",
       });
-      // unlock after the scene tween; punchText hard-clears residue so a new
-      // gesture can't stack layers even if copy is still rising
+      // unlock after the scene tween settles
       busyTimer.current = setTimeout(() => {
         busy.current = false;
         busyTimer.current = null;
       }, sceneDur * 1000 + 120);
-      setChapter(i);
     },
-    [punchText, sweepCards, bloomTo],
+    [sweepCards, bloomTo],
   );
 
-  // Intro: once the boot curtain lifts, the flower blooms open. Same path as a
-  // chapter change, so scrolling mid-intro cleanly takes over. Runs once:
-  // useProgress can flip `assetsReady` again when the panel canvases finish,
-  // and re-running it would bloom the wrong flower over the current chapter.
+  // Rise the single copy/CTA plate after React commits the new chapter text —
+  // stacking is impossible because only one plate exists.
+  const skipPunch = useRef(true);
+  useLayoutEffect(() => {
+    if (skipPunch.current) {
+      skipPunch.current = false;
+      return;
+    }
+    punchText();
+  }, [chapter, punchText]);
+
+  // Intro: once the boot curtain lifts, bloom the first flower open — same
+  // theatrical path as a chapter change. Runs once.
   const introduced = useRef(false);
   useEffect(() => {
     if (!bootDone) return;
@@ -319,7 +326,6 @@ export default function Experience() {
       const railInk = root.current?.querySelector<HTMLElement>(".rail-rule-ink");
       if (railInk) gsap.fromTo(railInk, { scaleX: 0 }, { scaleX: 1, duration: 1, delay: 0.65, ease: "expo.out", transformOrigin: "left center" });
     }
-    // let people navigate straight away rather than waiting for the bloom
     const unlock = setTimeout(() => (busy.current = false), 300);
     return () => {
       clearTimeout(unlock);
@@ -408,55 +414,49 @@ export default function Experience() {
       {/* ── Chapter copy: archival specimen plate (left / top) ─────────── */}
       <section
         data-copy
-        className="pointer-events-none fixed inset-x-5 top-[calc(env(safe-area-inset-top)+3.75rem)] z-10 grid max-w-sm wide:inset-x-auto wide:left-edge wide:top-1/2 wide:max-w-none wide:w-[min(22rem,23vw)] wide:-translate-y-1/2"
+        className="pointer-events-none fixed inset-x-5 top-[calc(env(safe-area-inset-top)+3.75rem)] z-10 max-w-sm wide:inset-x-auto wide:left-edge wide:top-1/2 wide:max-w-none wide:w-[min(22rem,23vw)] wide:-translate-y-1/2"
       >
-        {CHAPTERS.map((c, i) => (
-          <article
-            key={c.id}
-            data-chapter
-            className="copy-plate origin-left [grid-area:1/1] will-change-[transform,opacity,filter]"
-          >
-            <span className="copy-watermark font-serif" aria-hidden>
-              {pad(i + 1)}
-            </span>
-            <span className="copy-filament" aria-hidden />
-            <span className="copy-corner copy-corner--tl" aria-hidden />
-            <span className="copy-corner copy-corner--tr" aria-hidden />
-            <span className="copy-corner copy-corner--bl" aria-hidden />
-            <span className="copy-corner copy-corner--br" aria-hidden />
+        <article data-chapter className="copy-plate origin-left will-change-[transform,opacity,filter]">
+          <span className="copy-watermark font-serif" aria-hidden>
+            {pad(chapter + 1)}
+          </span>
+          <span className="copy-filament" aria-hidden />
+          <span className="copy-corner copy-corner--tl" aria-hidden />
+          <span className="copy-corner copy-corner--tr" aria-hidden />
+          <span className="copy-corner copy-corner--bl" aria-hidden />
+          <span className="copy-corner copy-corner--br" aria-hidden />
 
-            <div className="relative pl-3 wide:pl-6">
-              <div className="flex items-baseline gap-3">
-                <p className="text-[9px] uppercase tracking-[0.25em] text-muted wide:text-[11px]">{c.pretitle}</p>
-                <span className="copy-pulse hidden h-1.5 w-1.5 rounded-full bg-accent/80 wide:block short:hidden" aria-hidden />
-              </div>
-
-              <p className="mt-2 font-serif text-[12px] italic tracking-[0.04em] text-accent/75 wide:mt-5 wide:text-[15px] short:mt-1.5 short:text-[11px]">
-                {c.latin}
-              </p>
-
-              <h2 className="mt-1.5 font-serif text-[1.85rem] font-light leading-[0.98] tracking-[-0.01em] text-foreground wide:mt-3 wide:text-[clamp(2.6rem,3.8vw,4.25rem)] short:mt-1 short:text-[1.7rem]">
-                {c.title}
-              </h2>
-
-              <span className="copy-rule mt-3 wide:mt-8 short:mt-2.5" aria-hidden>
-                <span className="copy-rule-ink" />
-              </span>
-
-              <p className="mt-3 line-clamp-2 max-w-sm text-[12px] font-light leading-[1.6] text-muted wide:mt-5 wide:line-clamp-4 wide:text-[14px] wide:leading-[1.7] short:mt-2 short:line-clamp-2 short:text-[12px]">
-                {c.body}
-              </p>
-
-              <ul className="mt-6 hidden flex-wrap items-center gap-x-3 gap-y-2 wide:flex short:hidden">
-                {c.meta.map((m) => (
-                  <li key={m} className="copy-chip text-[9px] uppercase tracking-[0.22em] text-muted">
-                    {m}
-                  </li>
-                ))}
-              </ul>
+          <div className="relative pl-3 wide:pl-6">
+            <div className="flex items-baseline gap-3">
+              <p className="text-[9px] uppercase tracking-[0.25em] text-muted wide:text-[11px]">{current.pretitle}</p>
+              <span className="copy-pulse hidden h-1.5 w-1.5 rounded-full bg-accent/80 wide:block short:hidden" aria-hidden />
             </div>
-          </article>
-        ))}
+
+            <p className="mt-2 font-serif text-[12px] italic tracking-[0.04em] text-accent/75 wide:mt-5 wide:text-[15px] short:mt-1.5 short:text-[11px]">
+              {current.latin}
+            </p>
+
+            <h2 className="mt-1.5 font-serif text-[1.85rem] font-light leading-[0.98] tracking-[-0.01em] text-foreground wide:mt-3 wide:text-[clamp(2.6rem,3.8vw,4.25rem)] short:mt-1 short:text-[1.7rem]">
+              <OutlineTitle key={chapter} text={current.title} />
+            </h2>
+
+            <span className="copy-rule mt-3 wide:mt-8 short:mt-2.5" aria-hidden>
+              <span className="copy-rule-ink" />
+            </span>
+
+            <p className="mt-3 line-clamp-2 max-w-sm text-[12px] font-light leading-[1.6] text-muted wide:mt-5 wide:line-clamp-4 wide:text-[14px] wide:leading-[1.7] short:mt-2 short:line-clamp-2 short:text-[12px]">
+              {current.body}
+            </p>
+
+            <ul className="mt-6 hidden flex-wrap items-center gap-x-3 gap-y-2 wide:flex short:hidden">
+              {current.meta.map((m) => (
+                <li key={m} className="copy-chip text-[9px] uppercase tracking-[0.22em] text-muted">
+                  {m}
+                </li>
+              ))}
+            </ul>
+          </div>
+        </article>
       </section>
 
       {/* ── View plate: archival cards + CTA (right / bottom) ──────────── */}
@@ -488,7 +488,7 @@ export default function Experience() {
                     <span className="rail-frame-corner rail-frame-corner--bl" aria-hidden />
                     <span className="rail-frame-corner rail-frame-corner--br" aria-hidden />
                     <div data-card-media className="absolute inset-0 will-change-[clip-path,transform,filter]">
-                      <HoloViewport mode={p.mode} />
+                      <HoloViewport mode={p.mode} index={chapter} />
                     </div>
                     <span data-card-sheen className="card-sheen" aria-hidden />
                   </div>
@@ -507,28 +507,25 @@ export default function Experience() {
               <span className="copy-rule-ink rail-rule-ink" />
             </span>
 
-            <div className="mt-3 grid wide:mt-5 short:mt-2.5">
-              {CHAPTERS.map((c, i) => (
-                <div
-                  key={c.id}
-                  data-cta
-                  className="flex origin-left items-center justify-between gap-4 [grid-area:1/1] will-change-[transform,opacity,filter] wide:flex-col wide:items-stretch wide:gap-4"
-                >
-                  <div className="hidden wide:block short:hidden">
-                    <p className="text-[9px] uppercase tracking-[0.22em] text-muted">Archive note</p>
-                    <p className="mt-1.5 line-clamp-2 font-serif text-[13px] font-light italic leading-snug text-muted">{c.cta.caption}</p>
-                  </div>
-                  <button
-                    onClick={() => goTo(c.cta.action === "top" ? 0 : i + 1)}
-                    className="pill flex w-full items-center justify-between gap-6 px-5 py-3 text-[10px] uppercase tracking-[0.25em] short:py-2.5"
-                  >
-                    {c.cta.label}
-                    <span className="pill-arrow font-serif text-base leading-none" aria-hidden>
-                      {c.cta.action === "top" ? "↺" : "→"}
-                    </span>
-                  </button>
+            <div className="mt-3 wide:mt-5 short:mt-2.5">
+              <div
+                data-cta
+                className="flex origin-left items-center justify-between gap-4 will-change-[transform,opacity,filter] wide:flex-col wide:items-stretch wide:gap-4"
+              >
+                <div className="hidden wide:block short:hidden">
+                  <p className="text-[9px] uppercase tracking-[0.22em] text-muted">Archive note</p>
+                  <p className="mt-1.5 line-clamp-2 font-serif text-[13px] font-light italic leading-snug text-muted">{current.cta.caption}</p>
                 </div>
-              ))}
+                <button
+                  onClick={() => goTo(current.cta.action === "top" ? 0 : chapter + 1)}
+                  className="pill flex w-full items-center justify-between gap-6 px-5 py-3 text-[10px] uppercase tracking-[0.25em] short:py-2.5"
+                >
+                  {current.cta.label}
+                  <span className="pill-arrow font-serif text-base leading-none" aria-hidden>
+                    {current.cta.action === "top" ? "↺" : "→"}
+                  </span>
+                </button>
+              </div>
             </div>
           </div>
         </div>

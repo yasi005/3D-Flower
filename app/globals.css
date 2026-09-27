@@ -22,7 +22,7 @@
   --foreground: #f5f3ef;
   --muted: #c9c5bc;
   /* champagne gold; eased live between chapter tints by the timeline */
-  --accent: #d6c29c;
+  --accent: #a9c8ff;
   --hairline: rgba(255, 255, 255, 0.11);
 }
 
@@ -73,13 +73,9 @@ body {
   background: radial-gradient(ellipse 80% 75% at 50% 48%, transparent 52%, rgba(8, 7, 6, 0.4) 100%);
 }
 
-/* ── Frosted glass cards ───────────────────────────────────────────────── */
-
 .glass {
-  background: rgba(255, 255, 255, 0.04);
+  background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.12);
-  backdrop-filter: blur(14px) saturate(120%);
-  -webkit-backdrop-filter: blur(14px) saturate(120%);
 }
 
 /* soft band of light that rides the reveal edge of a card (see sweepCards) */
@@ -461,7 +457,40 @@ body {
   50% { opacity: 1; }
 }
 
+/* Chapter title: hollow letters stroked in the flower's accent. On arrival each
+   letter rises in filled with the accent, then the ink drains to the outline. */
+.title-word {
+  display: inline-block;
+  white-space: nowrap;
+}
+
+.title-letter {
+  display: inline-block;
+  color: color-mix(in srgb, var(--accent) 8%, transparent);
+  -webkit-text-stroke: 0.6px var(--accent);
+  paint-order: stroke fill;
+  animation: title-letter 1.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: calc(0.25s + var(--i) * 45ms);
+}
+
+@keyframes title-letter {
+  0% { opacity: 0; transform: translateY(0.35em); color: var(--accent); }
+  35% { opacity: 1; transform: none; color: var(--accent); }
+  100% { color: color-mix(in srgb, var(--accent) 8%, transparent); }
+}
+
+/* small phone titles: hairline outlines get too faint, keep them solid */
+@media (max-width: 639px), (max-aspect-ratio: 5/4) {
+  .title-letter {
+    color: var(--accent);
+    -webkit-text-stroke: 0;
+    animation-name: fade-in;
+    animation-duration: 0.9s;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
+  .title-letter,
   .fade-in,
   .hint-line,
   .copy-watermark,

@@ -1,26 +1,514 @@
 @import "tailwindcss";
 
+/* Side-column layout on landscape-ish screens; everything else (phones,
+   portrait tablets) gets the stacked layout. Keep in sync with WIDE_QUERY in
+   components/experience/state.ts, which the 3D camera uses. */
+@custom-variant wide {
+  @media (min-width: 640px) and (min-aspect-ratio: 5/4) {
+    @slot;
+  }
+}
+
+/* short landscape screens (phones on their side): tighter type and rhythm */
+@custom-variant short {
+  @media (max-height: 560px) {
+    @slot;
+  }
+}
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* matte obsidian, never pure black */
+  --background: #090a0f;
+  /* cool platinum for primary text */
+  --foreground: #e6e6e9;
+  /* muted zinc for pre-titles, specs, captions */
+  --muted: #a1a1aa;
+  /* champagne gold; eased live between chapter tints by the timeline */
+  --accent: #d6c29c;
+  --hairline: rgba(255, 255, 255, 0.08);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-accent: var(--accent);
+  --color-hairline: var(--hairline);
   --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-serif: var(--font-cormorant);
+  /* page margin shared by the masthead, both columns and the footer */
+  --spacing-edge: 6vw;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  background: var(--background);
+  color-scheme: dark;
+}
+
+/* single-page experience: gestures step through chapters, nothing scrolls */
+html,
+body {
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+  font-weight: 300;
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background: var(--accent);
+  color: var(--background);
+}
+
+/* barely-there falloff at the edges; keeps the frame quiet */
+.bg-vignette {
+  background: radial-gradient(ellipse at center, transparent 45%, rgba(3, 3, 6, 0.55) 100%);
+}
+
+/* ── Frosted glass cards ───────────────────────────────────────────────── */
+
+.glass {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(14px) saturate(120%);
+  -webkit-backdrop-filter: blur(14px) saturate(120%);
+}
+
+/* soft band of light that rides the reveal edge of a card (see sweepCards) */
+.card-sheen {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  background: linear-gradient(
+    to top,
+    transparent 0%,
+    rgba(255, 255, 255, 0.07) 46%,
+    color-mix(in srgb, var(--accent) 22%, transparent) 50%,
+    rgba(255, 255, 255, 0.07) 54%,
+    transparent 100%
+  );
+  mix-blend-mode: screen;
+}
+
+/* ── Pill CTA ──────────────────────────────────────────────────────────── */
+
+.pill {
+  pointer-events: auto;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 9999px;
+  color: var(--foreground);
+  background: transparent;
+  transition:
+    border-color 0.5s cubic-bezier(0.22, 1, 0.36, 1),
+    background-color 0.5s cubic-bezier(0.22, 1, 0.36, 1),
+    color 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.pill:hover,
+.pill:focus-visible {
+  outline: none;
+  border-color: color-mix(in srgb, var(--accent) 70%, transparent);
+  background: rgba(255, 255, 255, 0.035);
+  color: #fff;
+}
+
+.pill .pill-arrow {
+  transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.pill:hover .pill-arrow,
+.pill:focus-visible .pill-arrow {
+  transform: translateX(4px);
+}
+
+/* ── Archival specimen plate (left column) ────────────────────────────── */
+
+.copy-plate {
+  position: relative;
+  padding: 0.85rem 0.65rem 0.95rem 0.55rem;
+}
+
+/* catalog numeral — atmosphere only, kept small so the flower owns the stage */
+.copy-watermark {
+  position: absolute;
+  right: -0.05em;
+  top: -0.12em;
+  z-index: 0;
+  font-size: clamp(3.25rem, 6.5vw, 5rem);
+  font-weight: 300;
+  font-style: italic;
+  line-height: 0.8;
+  letter-spacing: -0.04em;
+  color: color-mix(in srgb, var(--accent) 10%, transparent);
+  user-select: none;
+  animation: copy-breathe 7s ease-in-out infinite;
+}
+
+/* thin living filament along the plate’s left edge */
+.copy-filament {
+  position: absolute;
+  left: 0;
+  top: 0.6rem;
+  bottom: 0.6rem;
+  width: 1px;
+  background: linear-gradient(
+    to bottom,
+    transparent 0%,
+    color-mix(in srgb, var(--accent) 55%, transparent) 22%,
+    rgba(255, 255, 255, 0.22) 50%,
+    color-mix(in srgb, var(--accent) 55%, transparent) 78%,
+    transparent 100%
+  );
+  overflow: hidden;
+}
+
+.copy-filament::after {
+  content: "";
+  position: absolute;
+  left: -1px;
+  width: 3px;
+  height: 18%;
+  background: linear-gradient(
+    to bottom,
+    transparent,
+    color-mix(in srgb, var(--accent) 90%, white),
+    transparent
+  );
+  filter: blur(0.5px);
+  animation: copy-scan 3.8s cubic-bezier(0.45, 0, 0.25, 1) infinite;
+}
+
+/* print-registration L-marks at the four corners */
+.copy-corner {
+  position: absolute;
+  width: 11px;
+  height: 11px;
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+.copy-corner::before,
+.copy-corner::after {
+  content: "";
+  position: absolute;
+  background: color-mix(in srgb, var(--accent) 70%, white);
+}
+
+.copy-corner::before {
+  width: 11px;
+  height: 1px;
+}
+
+.copy-corner::after {
+  width: 1px;
+  height: 11px;
+}
+
+.copy-corner--tl {
+  top: 0;
+  left: 0;
+}
+.copy-corner--tl::before {
+  top: 0;
+  left: 0;
+}
+.copy-corner--tl::after {
+  top: 0;
+  left: 0;
+}
+
+.copy-corner--tr {
+  top: 0;
+  right: 0;
+}
+.copy-corner--tr::before {
+  top: 0;
+  right: 0;
+}
+.copy-corner--tr::after {
+  top: 0;
+  right: 0;
+}
+
+.copy-corner--bl {
+  bottom: 0;
+  left: 0;
+}
+.copy-corner--bl::before {
+  bottom: 0;
+  left: 0;
+}
+.copy-corner--bl::after {
+  bottom: 0;
+  left: 0;
+}
+
+.copy-corner--br {
+  bottom: 0;
+  right: 0;
+}
+.copy-corner--br::before {
+  bottom: 0;
+  right: 0;
+}
+.copy-corner--br::after {
+  bottom: 0;
+  right: 0;
+}
+
+/* ink rule that gently draws itself */
+.copy-rule {
+  display: block;
+  position: relative;
+  height: 1px;
+  width: 3.25rem;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+
+.copy-rule-ink {
+  display: block;
+  height: 100%;
+  width: 100%;
+  transform-origin: left center;
+  background: color-mix(in srgb, var(--accent) 75%, transparent);
+}
+
+.copy-pulse {
+  animation: copy-pulse 2.8s ease-in-out infinite;
+}
+
+.copy-chip {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 0.35rem 0.65rem;
+  letter-spacing: 0.22em;
+}
+
+/* ── Archival view plate (right column) ──────────────────────────────── */
+
+.rail-plate {
+  position: relative;
+  padding: 0.75rem 0.55rem 0.85rem 0.55rem;
+}
+
+/* filament on the outer (right) edge — mirrors the left plate */
+.rail-filament {
+  position: absolute;
+  right: 0;
+  top: 0.6rem;
+  bottom: 0.6rem;
+  width: 1px;
+  background: linear-gradient(
+    to bottom,
+    transparent 0%,
+    color-mix(in srgb, var(--accent) 55%, transparent) 22%,
+    rgba(255, 255, 255, 0.22) 50%,
+    color-mix(in srgb, var(--accent) 55%, transparent) 78%,
+    transparent 100%
+  );
+  overflow: hidden;
+}
+
+.rail-filament::after {
+  content: "";
+  position: absolute;
+  right: -1px;
+  width: 3px;
+  height: 18%;
+  background: linear-gradient(
+    to bottom,
+    transparent,
+    color-mix(in srgb, var(--accent) 90%, white),
+    transparent
+  );
+  filter: blur(0.5px);
+  animation: copy-scan 4.2s cubic-bezier(0.45, 0, 0.25, 1) infinite;
+  animation-delay: 0.6s;
+}
+
+/* mini registration marks inside each holo frame */
+.rail-frame-corner {
+  position: absolute;
+  z-index: 2;
+  width: 8px;
+  height: 8px;
+  pointer-events: none;
+  opacity: 0.55;
+}
+
+.rail-frame-corner::before,
+.rail-frame-corner::after {
+  content: "";
+  position: absolute;
+  background: color-mix(in srgb, var(--accent) 80%, white);
+}
+
+.rail-frame-corner::before {
+  width: 8px;
+  height: 1px;
+}
+
+.rail-frame-corner::after {
+  width: 1px;
+  height: 8px;
+}
+
+.rail-frame-corner--tl {
+  top: 6px;
+  left: 6px;
+}
+.rail-frame-corner--tl::before,
+.rail-frame-corner--tl::after {
+  top: 0;
+  left: 0;
+}
+
+.rail-frame-corner--tr {
+  top: 6px;
+  right: 6px;
+}
+.rail-frame-corner--tr::before {
+  top: 0;
+  right: 0;
+}
+.rail-frame-corner--tr::after {
+  top: 0;
+  right: 0;
+}
+
+.rail-frame-corner--bl {
+  bottom: 6px;
+  left: 6px;
+}
+.rail-frame-corner--bl::before {
+  bottom: 0;
+  left: 0;
+}
+.rail-frame-corner--bl::after {
+  bottom: 0;
+  left: 0;
+}
+
+.rail-frame-corner--br {
+  bottom: 6px;
+  right: 6px;
+}
+.rail-frame-corner--br::before {
+  bottom: 0;
+  right: 0;
+}
+.rail-frame-corner--br::after {
+  bottom: 0;
+  right: 0;
+}
+
+.rail-cap-mark {
+  display: inline-block;
+  width: 5px;
+  height: 1px;
+  flex-shrink: 0;
+  background: color-mix(in srgb, var(--accent) 70%, transparent);
+}
+
+/* ── Small motion details ─────────────────────────────────────────────── */
+
+.fade-in {
+  animation: fade-in 0.9s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: none; }
+}
+
+.hint-line {
+  background: linear-gradient(to bottom, transparent, rgba(255, 255, 255, 0.35));
+  animation: hint-line 2.6s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+  transform-origin: top;
+}
+
+@keyframes hint-line {
+  0% { transform: scaleY(0); opacity: 1; }
+  60% { transform: scaleY(1); opacity: 1; }
+  100% { transform: scaleY(1); opacity: 0; }
+}
+
+@keyframes copy-breathe {
+  0%,
+  100% { opacity: 0.55; transform: translateY(0); }
+  50% { opacity: 1; transform: translateY(-2px); }
+}
+
+@keyframes copy-scan {
+  0% { top: -5%; opacity: 0; }
+  12% { opacity: 1; }
+  88% { opacity: 1; }
+  100% { top: 90%; opacity: 0; }
+}
+
+@keyframes copy-pulse {
+  0%,
+  100% { opacity: 0.35; }
+  50% { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fade-in,
+  .hint-line,
+  .copy-watermark,
+  .copy-filament::after,
+  .rail-filament::after,
+  .copy-pulse {
+    animation: none;
+  }
+}
+
+/* stacked / short: quieter plate so the flower keeps the stage */
+@media (max-width: 639px), (max-aspect-ratio: 5/4) {
+  .copy-plate {
+    padding: 0.25rem 0.15rem 0.35rem 0.2rem;
+  }
+
+  .copy-watermark {
+    font-size: clamp(2.5rem, 12vw, 3.75rem);
+    top: -0.2em;
+    right: 0;
+    opacity: 0.28;
+    animation: none;
+  }
+
+  .copy-filament,
+  .copy-corner,
+  .rail-filament,
+  .rail-plate > .copy-corner,
+  .rail-frame-corner {
+    display: none;
+  }
+
+  .rail-plate {
+    padding: 0;
+  }
+}
+
+@media (max-height: 560px) {
+  .copy-watermark,
+  .copy-filament,
+  .copy-corner,
+  .rail-filament,
+  .rail-plate > .copy-corner,
+  .rail-frame-corner {
+    display: none;
+  }
+
+  .copy-plate,
+  .rail-plate {
+    padding: 0;
+  }
 }

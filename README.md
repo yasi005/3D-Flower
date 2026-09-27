@@ -1,36 +1,33 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Neon / Flora
 
-## Getting Started
+A scroll-driven 3D flower collection — Next.js, React Three Fiber, and GSAP.
 
-First, run the development server:
+## Local
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Deploy (Vercel)
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+1. Push this repo to GitHub.
+2. Import the repo at [vercel.com/new](https://vercel.com/new).
+3. Framework preset: **Next.js** (auto-detected). No env vars required.
+4. Deploy.
 
-## Learn More
+Or from the CLI: `npx vercel`.
 
-To learn more about Next.js, take a look at the following resources:
+## Model credits
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+GLB models used under CC-BY 4.0 (see Sketchfab listings):
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- [“Flower” by olilar](https://sketchfab.com/3d-models/flower-a2eea4c5ba844243ad9484c5b5d2158e)
+- [“flower” by milaha](https://sketchfab.com/3d-models/flower-0fcaca93ce974129ba6188dda6e3b742)
+- [“Strange flower” by ghosted](https://sketchfab.com/3d-models/strange-flower-f687062b820a4d5fb6b01853c7c521b2)
 
-## Deploy on Vercel
+## Stack
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- Next.js 16 · React 19 · Three.js · @react-three/fiber · GSAP · Tailwind CSS 4

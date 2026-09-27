@@ -8,9 +8,11 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Next.js-16-090a0f?style=flat-square&labelColor=1a1a1f" alt="Next.js" />
-  <img src="https://img.shields.io/badge/Three.js-R3F-090a0f?style=flat-square&labelColor=1a1a1f" alt="Three.js" />
-  <img src="https://img.shields.io/badge/GSAP-scroll-090a0f?style=flat-square&labelColor=1a1a1f" alt="GSAP" />
+  <img src="https://img.shields.io/badge/Next.js-16-000000?style=flat-square&logo=nextdotjs&logoColor=white" alt="Next.js" />
+  <img src="https://img.shields.io/badge/React-19-20232A?style=flat-square&logo=react&logoColor=61DAFB" alt="React" />
+  <img src="https://img.shields.io/badge/Three.js-R3F-000000?style=flat-square&logo=threedotjs&logoColor=white" alt="Three.js" />
+  <img src="https://img.shields.io/badge/GSAP-scroll-88CE02?style=flat-square&logo=greensock&logoColor=white" alt="GSAP" />
+  <img src="https://img.shields.io/badge/Vercel-ready-000000?style=flat-square&logo=vercel&logoColor=white" alt="Vercel" />
 </p>
 
 ---
@@ -29,11 +31,13 @@ If it reads like a product landing page, I failed. If it feels like an archive y
 
 ## The experience
 
-- **Scroll or swipe** — step specimen by specimen  
-- **Keys** — arrows, page keys, Home / End  
-- **Bloom** — the current flower folds shut; the next opens from a bud  
-- **Spin** — scroll charges a flywheel that winds up and settles  
-- **Plates** — catalog copy on the left, profile and detail views on the right  
+| | |
+|:--|:--|
+| **Scroll / swipe** | Step specimen by specimen |
+| **Keys** | Arrows, page keys, Home / End |
+| **Bloom** | Current flower folds shut; the next opens from a bud |
+| **Spin** | Scroll charges a flywheel that winds up and settles |
+| **Plates** | Catalog copy on the left, profile & detail on the right |
 
 Desktop keeps the full archival layout. Mobile softens it so the flower stays the focus.
 
@@ -71,6 +75,12 @@ Open [http://localhost:3000](http://localhost:3000).
 Static Next.js app. No env vars, no backend.
 
 Push to GitHub → import on [Vercel](https://vercel.com/new) → deploy.
+
+<p align="center">
+  <a href="https://vercel.com/new">
+    <img src="https://img.shields.io/badge/Deploy%20on-Vercel-000000?style=for-the-badge&logo=vercel&logoColor=white" alt="Deploy on Vercel" />
+  </a>
+</p>
 
 ---
 
